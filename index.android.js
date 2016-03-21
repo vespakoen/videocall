@@ -8,22 +8,58 @@ import React, {
   Component,
   StyleSheet,
   Text,
-  View
+  View,
+  DeviceEventEmitter
 } from 'react-native';
+
+import VoxImplant from 'react-native-voximplant';
+
+VoxImplant.SDK.closeConnection();
+
+var currentCallId;
+DeviceEventEmitter.addListener('LoginSuccessful', (...args) => {
+  console.log('LoginSuccessful', args);
+  VoxImplant.SDK.createCall('test', true, null, (callId) => {
+    console.log('MADE CALL', callId);
+    // console.log('create call', arguments);
+    currentCallId = callId;
+    VoxImplant.SDK.startCall(callId, {'X-DirectCall' : 'true'});
+  });
+});
+DeviceEventEmitter.addListener('LoginFailed', (...args) => console.log('LoginFailed', args));
+DeviceEventEmitter.addListener('ConnectionSuccessful', (...args) => console.log('ConnectionSuccessful', args));
+DeviceEventEmitter.addListener('ConnectionClosed', (...args) => console.log('ConnectionClosed', args));
+DeviceEventEmitter.addListener('ConnectionFailed', (...args) => console.log('ConnectionFailed', args));
+DeviceEventEmitter.addListener('CallConnected', (...args) => console.log('CallConnected', args));
+DeviceEventEmitter.addListener('CallDisconnected', (...args) => console.log('CallDisconnected', args));
+DeviceEventEmitter.addListener('CallRinging', (...args) => console.log('CallRinging', args));
+DeviceEventEmitter.addListener('CallFailed', (...args) => console.log('CallFailed', args));
+DeviceEventEmitter.addListener('CallAudioStarted', (...args) => console.log('CallAudioStarted', args));
+// DeviceEventEmitter.addListener('IncomingCall', (...args) => console.log('IncomingCall', args));
+DeviceEventEmitter.addListener('SIPInfoReceivedInCall', (...args) => console.log('SIPInfoReceivedInCall', args));
+DeviceEventEmitter.addListener('MessageReceivedInCall', (...args) => console.log('MessageReceivedInCall', args));
+
+DeviceEventEmitter.addListener('ConnectionSuccessful', () => {
+  console.log('Connection successful');
+  VoxImplant.SDK.switchToCamera('front');
+  VoxImplant.SDK.login('test@mysterycall.vespakoen.voximplant.com', 'testing');
+});
+DeviceEventEmitter.addListener('IncomingCall', (incomingCall) => {
+  console.log('Inbound call');
+  currentCallId = incomingCall.callId;
+  VoxImplant.SDK.answerCall(currentCallId);
+  // answer call VoxImplant.SDK.answerCall(currentCallId);
+  // or
+  // reject call VoxImplant.SDK.declineCall(currentCallId);
+});
+VoxImplant.SDK.connect();
 
 class MysteryCall extends Component {
   render() {
     return (
       <View style={styles.container}>
-        <Text style={styles.welcome}>
-          Welcome to React Native!
-        </Text>
-        <Text style={styles.instructions}>
-          To get started, edit index.android.js
-        </Text>
-        <Text style={styles.instructions}>
-          Shake or press menu button for dev menu
-        </Text>
+        <VoxImplant.RemoteView style={styles.remoteview} callId={currentCallId}></VoxImplant.RemoteView>
+        <VoxImplant.Preview style={styles.selfview}></VoxImplant.Preview>
       </View>
     );
   }
@@ -31,21 +67,18 @@ class MysteryCall extends Component {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F5FCFF',
+    flex: 1
   },
-  welcome: {
-    fontSize: 20,
-    textAlign: 'center',
-    margin: 10,
+  remoteview: {
+    flex: 1
   },
-  instructions: {
-    textAlign: 'center',
-    color: '#333333',
-    marginBottom: 5,
-  },
+  selfview: {
+    position: 'absolute',
+    bottom: 10,
+    left: 10,
+    width: 150,
+    height: 200
+  }
 });
 
 AppRegistry.registerComponent('MysteryCall', () => MysteryCall);
